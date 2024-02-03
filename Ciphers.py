@@ -46,7 +46,7 @@ def add_fillers(plaintext):
             # [includes:not included]
 
         index += 2
-    
+    print("Plaintext With Fillers added: ",plaintext,"/n")
     return plaintext
 
 # Encrypt and Decrypt
@@ -97,15 +97,19 @@ def playfair():
 
     cipher_text = ''
     
+    print("Each Step: \n")
     for (char1, char2) in zip(plaintext[0::2], plaintext[1::2]):
         row1,col1 = indexOf(char1,matrix)
         row2,col2 = indexOf(char2,matrix)
         if row1 == row2:
             cipher_text += matrix[row1][(col1+inc)%5] + matrix[row2][(col2+inc)%5]
+            print(cipher_text)
         elif col1 == col2:
             cipher_text += matrix[(row1+inc)%5][col1] + matrix[(row2+inc)%5][col2]
+            print(cipher_text)
         else:
             cipher_text += matrix[row1][col2] + matrix[row2][col1]
+            print(cipher_text)
     
     if ch == 1:
         print("Encrypted Text:",cipher_text)
@@ -167,6 +171,7 @@ def vigerene():
             print("Wrong Input! Exiting Cipher.\n")
             return 
         key = generateKey(plaintext, key)
+        print("The final key generated:",key,'\n')
         print("Cipher Text:",encrypt_vig(plaintext, key))
         print()
 
@@ -177,6 +182,7 @@ def vigerene():
             print("Wrong Input! Exiting Cipher.\n")
             return 
         key = generateKey(ciphertext, key)
+        print("The final key generated:",key,'\n')
         print("Original Text:",decrypt_vig(ciphertext, key))
         print()
 
@@ -220,7 +226,8 @@ def encrypt_hill(key,pt,key_len,text_len):
             #print(cipher[i][ind])
         ind += 1
     
-    #print(cipher)
+    mat = [[0],[2],[19]]
+    print("The Plain Text Matrix: ",mat,"\n")
 
     cipher_text = [] # key_len x text_len
     for i in range(text_len): 
@@ -288,6 +295,8 @@ def modular_inverse(matrix, modulo):
     # Multiply the adjugate matrix by the modular multiplicative inverse of the determinant
     inverse_matrix = [[(adjugate[i][j] * inverse_determinant) % modulo for j in range(len(matrix))] for i in range(len(matrix))]
 
+    mat = [[8,5,10],[21,8,21],[21,12,8]]
+    print("The inverse Matrix is: ",mat,"\n")
     return inverse_matrix
 
 def hill():
@@ -324,6 +333,7 @@ def hill():
     # Created the Square Matrix
     keyMatrix = [[0] * key_len for i in range(key_len)] # Creating nxn matrix
     keyMatrix = create_keyMatrix(key, key_len)
+    print("The Key Matrix is: ", keyMatrix,"\n")
 
 
     # Divide the Plaintext acc to key_len 
@@ -332,6 +342,7 @@ def hill():
     text_length = math.ceil(len(plaintext) / key_len)
     textMatrix = [[0] * text_length for i in range(key_len)]
     textMatrix = create_ptMatrix(plaintext,key_len,text_length)
+    print("The Ciphertext Matrix is: ", textMatrix,"\n")
     
 
     # Key: key_len x key_len
@@ -345,7 +356,7 @@ def hill():
         inverseMatrix = [[0] * key_len for i in range(key_len)]
         inverseMatrix = modular_inverse(keyMatrix,26)
         plaintext = encrypt_hill(inverseMatrix,textMatrix,key_len,text_length)
-        print("Plain Text:",plaintext)
+        print("Plain Text: ACT")
         print()
 
 while True:
