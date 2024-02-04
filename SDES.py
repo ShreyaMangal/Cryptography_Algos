@@ -63,7 +63,7 @@ def s_des():
         pt = input().strip()
         if checker(pt) == True:
             if len(pt) <= 2:
-                hex_to_bin(pt, 8)
+                pt = hex_to_bin(pt, 8)
         else:
             print("Wrong Value!\n")
 
@@ -74,7 +74,7 @@ def s_des():
         ct = input().strip()
         if checker(ct) == True:
             if len(ct) <= 2:
-                hex_to_bin(ct, 8)
+                ct = hex_to_bin(ct, 8)
         else:
             print("Wrong Value!\n")
         

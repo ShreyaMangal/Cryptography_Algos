@@ -1,0 +1,292 @@
+def aes():
+    print("Encrypt or Decrypt")
+    print("1. Encrypt")
+    print("2. Decrypt")
+    ch = int(input("Enter your choice: ").strip())
+
+    print("Enter the Key Value: ")
+    key = input().strip()
+    
+    if input_checker(key) == True:
+        if len(key) == 128:
+            key = bin_to_hex(key,128)
+    else:
+        print("Wrong Key Value!\n")
+        return
+
+    keys = key_expansion(key)
+    print(keys,'\n')
+    print(get_round_key(1,keys))
+
+    if ch == 1:
+        print("Enter the PlainText: ")
+        pt = input().strip()
+        if input_checker(pt) == True:
+            if len(pt) == 128:
+                pt = bin_to_hex(pt,128)
+        else:
+            print("Wrong Value!\n")
+
+        ct = encrypt(pt,keys)
+        print("The Cipher Text is:",ct,"\n")
+    else:
+        print("Enter the CipherText: ")
+        ct = input().strip()
+        if input_checker(ct) == True:
+            if len(ct) == 128:
+                ct = bin_to_hex(ct, 128)
+        else:
+            print("Wrong Value!\n")
+        
+        pt = decrypt(ct,keys)
+        print("The Plain Text is:",pt,"\n")
+
+def encrypt(pt, keys):
+    pt = convert_to_matrix(pt)
+
+    # Initial Tranformation
+    it = xor_matrices(pt, convert_to_matrix(get_round_key(0,keys)))
+
+    # Round 1 to n 9: Sub_bytes -> shift rows -> mixcols -> add round key
+    for i in range(1,10):
+        it_sbox = sub_bytes(it)
+        it_shift = shift_rows(it_sbox)
+        #print(it_shift)
+        it_mix = mixColumns(it_shift)
+        it = xor_matrices(it_mix, convert_to_matrix(get_round_key(i,keys)))
+    
+    it_sbox = sub_bytes(it)
+    it_shift = shift_rows(it_sbox)
+    it = xor_matrices(it_shift, convert_to_matrix(get_round_key(10,keys)))
+
+    return it
+
+
+
+def decrypt(ct, keys):
+    ct = convert_to_matrix(ct)
+
+def input_checker(str):
+    length = len(str)
+
+    if length == 128 and is_correct(str, 2) == True:
+            return True
+    elif length == 32 and is_correct(str, 16) == True:
+            return True
+    else:
+        print("Wrong Key Value!\n")
+        return False
+
+def is_correct(str, n):
+    try:
+        # Try to convert the input to an integer with base n
+        int(str, n)
+        return True
+    except:
+        return False 
+
+def bin_to_hex(binary_value):
+    hex_digits = "0123456789ABCDEF"
+    binary_digits = "01"
+    
+    # Pad the binary value with zeros to make its length a multiple of 4
+    while len(binary_value) % 4 != 0:
+        binary_value = '0' + binary_value
+
+    hex_value = ""
+    for i in range(0, len(binary_value), 4):
+        # Take 4 bits at a time
+        four_bits = binary_value[i:i+4]
+        
+        # Convert the 4 bits to decimal
+        decimal_value = 0
+        for j in range(4):
+            decimal_value += int(four_bits[j]) * (2 ** (3 - j))
+        
+        # Convert the decimal value to hexadecimal
+        hex_digit = hex_digits[decimal_value]
+        hex_value += hex_digit
+
+    return hex_value
+
+def convert_to_matrix(hex_string):
+
+    # Split the string into pairs of characters (each representing a byte)
+    n = 2
+    chunks = [hex_string[i:i+n] for i in range(0, len(hex_string), n)]
+
+    # Create a 4x4 matrix (list of lists) from the chunks (filling it column-wise)
+    my_matrix = [chunks[i:i+4] for i in range(0, len(chunks), 4)]
+
+    # Transpose the matrix manually to fill it column-wise
+    transposed_matrix = []
+    for col in range(4):
+        transposed_matrix.append([row[col] for row in my_matrix])
+    
+    return transposed_matrix
+
+def hex_to_int(hex_value):
+    return int(hex_value, 16)
+
+def int_to_hex(int_value):
+    return hex(int_value)[2:].upper().zfill(2)
+
+# Add Round KEY
+def xor_matrices(matrix1, matrix2):
+    result_matrix = []
+    for row1, row2 in zip(matrix1, matrix2):
+        result_row = [int_to_hex(hex_to_int(cell1) ^ hex_to_int(cell2)) for cell1, cell2 in zip(row1, row2)]
+        result_matrix.append(result_row)
+    return result_matrix
+
+def sub_bytes(state):
+
+    SBOX = [
+    0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
+    0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
+    0xB7, 0xFD, 0x93, 0x26, 0x36, 0x3F, 0xF7, 0xCC, 0x34, 0xA5, 0xE5, 0xF1, 0x71, 0xD8, 0x31, 0x15,
+    0x04, 0xC7, 0x23, 0xC3, 0x18, 0x96, 0x05, 0x9A, 0x07, 0x12, 0x80, 0xE2, 0xEB, 0x27, 0xB2, 0x75,
+    0x09, 0x83, 0x2C, 0x1A, 0x1B, 0x6E, 0x5A, 0xA0, 0x52, 0x3B, 0xD6, 0xB3, 0x29, 0xE3, 0x2F, 0x84,
+    0x53, 0xD1, 0x00, 0xED, 0x20, 0xFC, 0xB1, 0x5B, 0x6A, 0xCB, 0xBE, 0x39, 0x4A, 0x4C, 0x58, 0xCF,
+    0xD0, 0xEF, 0xAA, 0xFB, 0x43, 0x4D, 0x33, 0x85, 0x45, 0xF9, 0x02, 0x7F, 0x50, 0x3C, 0x9F, 0xA8,
+    0x51, 0xA3, 0x40, 0x8F, 0x92, 0x9D, 0x38, 0xF5, 0xBC, 0xB6, 0xDA, 0x21, 0x10, 0xFF, 0xF3, 0xD2,
+    0xCD, 0x0C, 0x13, 0xEC, 0x5F, 0x97, 0x44, 0x17, 0xC4, 0xA7, 0x7E, 0x3D, 0x64, 0x5D, 0x19, 0x73,
+    0x60, 0x81, 0x4F, 0xDC, 0x22, 0x2A, 0x90, 0x88, 0x46, 0xEE, 0xB8, 0x14, 0xDE, 0x5E, 0x0B, 0xDB,
+    0xE0, 0x32, 0x3A, 0x0A, 0x49, 0x06, 0x24, 0x5C, 0xC2, 0xD3, 0xAC, 0x62, 0x91, 0x95, 0xE4, 0x79,
+    0xE7, 0xC8, 0x37, 0x6D, 0x8D, 0xD5, 0x4E, 0xA9, 0x6C, 0x56, 0xF4, 0xEA, 0x65, 0x7A, 0xAE, 0x08,
+    0xBA, 0x78, 0x25, 0x2E, 0x1C, 0xA6, 0xB4, 0xC6, 0xE8, 0xDD, 0x74, 0x1F, 0x4B, 0xBD, 0x8B, 0x8A,
+    0x70, 0x3E, 0xB5, 0x66, 0x48, 0x03, 0xF6, 0x0E, 0x61, 0x35, 0x57, 0xB9, 0x86, 0xC1, 0x1D, 0x9E,
+    0xE1, 0xF8, 0x98, 0x11, 0x69, 0xD9, 0x8E, 0x94, 0x9B, 0x1E, 0x87, 0xE9, 0xCE, 0x55, 0x28, 0xDF,
+    0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16
+    ]
+
+
+    for i in range(len(state)):
+        for j in range(len(state[i])):
+            row = int(state[i][j], 16) // 0x10
+            col = int(state[i][j], 16) % 0x10
+            state[i][j] = format(SBOX[row * 16 + col], '02X')
+    
+    return state
+
+
+
+# KEY EXPANSION
+def rot_word(word):
+    """Rotates the word one byte to the left."""
+    return word[2:] + word[:2]
+
+def sub_word(word):
+    SBox = [
+    0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
+    0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
+    0xB7, 0xFD, 0x93, 0x26, 0x36, 0x3F, 0xF7, 0xCC, 0x34, 0xA5, 0xE5, 0xF1, 0x71, 0xD8, 0x31, 0x15,
+    0x04, 0xC7, 0x23, 0xC3, 0x18, 0x96, 0x05, 0x9A, 0x07, 0x12, 0x80, 0xE2, 0xEB, 0x27, 0xB2, 0x75,
+    0x09, 0x83, 0x2C, 0x1A, 0x1B, 0x6E, 0x5A, 0xA0, 0x52, 0x3B, 0xD6, 0xB3, 0x29, 0xE3, 0x2F, 0x84,
+    0x53, 0xD1, 0x00, 0xED, 0x20, 0xFC, 0xB1, 0x5B, 0x6A, 0xCB, 0xBE, 0x39, 0x4A, 0x4C, 0x58, 0xCF,
+    0xD0, 0xEF, 0xAA, 0xFB, 0x43, 0x4D, 0x33, 0x85, 0x45, 0xF9, 0x02, 0x7F, 0x50, 0x3C, 0x9F, 0xA8,
+    0x51, 0xA3, 0x40, 0x8F, 0x92, 0x9D, 0x38, 0xF5, 0xBC, 0xB6, 0xDA, 0x21, 0x10, 0xFF, 0xF3, 0xD2,
+    0xCD, 0x0C, 0x13, 0xEC, 0x5F, 0x97, 0x44, 0x17, 0xC4, 0xA7, 0x7E, 0x3D, 0x64, 0x5D, 0x19, 0x73,
+    0x60, 0x81, 0x4F, 0xDC, 0x22, 0x2A, 0x90, 0x88, 0x46, 0xEE, 0xB8, 0x14, 0xDE, 0x5E, 0x0B, 0xDB,
+    0xE0, 0x32, 0x3A, 0x0A, 0x49, 0x06, 0x24, 0x5C, 0xC2, 0xD3, 0xAC, 0x62, 0x91, 0x95, 0xE4, 0x79,
+    0xE7, 0xC8, 0x37, 0x6D, 0x8D, 0xD5, 0x4E, 0xA9, 0x6C, 0x56, 0xF4, 0xEA, 0x65, 0x7A, 0xAE, 0x08,
+    0xBA, 0x78, 0x25, 0x2E, 0x1C, 0xA6, 0xB4, 0xC6, 0xE8, 0xDD, 0x74, 0x1F, 0x4B, 0xBD, 0x8B, 0x8A,
+    0x70, 0x3E, 0xB5, 0x66, 0x48, 0x03, 0xF6, 0x0E, 0x61, 0x35, 0x57, 0xB9, 0x86, 0xC1, 0x1D, 0x9E,
+    0xE1, 0xF8, 0x98, 0x11, 0x69, 0xD9, 0x8E, 0x94, 0x9B, 0x1E, 0x87, 0xE9, 0xCE, 0x55, 0x28, 0xDF,
+    0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16
+]
+    """Substitutes each byte of the word using the SBox."""
+    return ''.join([f"{SBox[int(byte, 16)]:02x}" for byte in [word[i:i+2] for i in range(0, len(word), 2)]])
+
+def g(word, i):
+    Rcon = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36]
+    """Performs a round-dependent transformation on a word."""
+    rcon = f"{Rcon[i-1]:02x}000000"  
+    word = rot_word(word)
+    word = sub_word(word)
+    return ''.join([f"{int(word[j:j+2], 16) ^ int(rcon[j:j+2], 16):02x}" for j in range(0, len(word), 2)])
+
+def key_expansion(key):
+
+    """Expands a 128-bit cipher key into 44 32-bit words."""
+    w = [None] * 44
+    j = 0
+
+    for i in range(4):
+        w[i] = key[j : j+8]  
+        j += 8
+
+    for i in range(4, 44):
+        temp = w[i-1]
+        if i % 4 == 0:
+            temp = g(temp, i//4)
+        w[i] = ''.join([f"{int(w[i-4][j:j+2], 16) ^ int(temp[j:j+2], 16):02x}" for j in range(0, len(w[i-4]), 2)])
+
+    return w
+
+def get_round_key(round_no,expanded_key):
+    return ''.join(expanded_key[4*round_no:4*round_no+4])
+
+def shift_rows(state):
+
+    # Convert hex strings to integers
+    state_matrix = [[hex_to_int(cell) for cell in row] for row in state]
+
+
+    for i in range(1, 4):
+        # Extract the current row
+        current_row = state_matrix[i]
+        # Perform the circular shift
+        shifted_row = current_row[i:] + current_row[:i]
+        # Update the state with the shifted row
+        state_matrix[i] = shifted_row
+    
+    # Convert back to hex strings
+    output_matrix = [[int_to_hex(cell) for cell in row] for row in state_matrix]
+
+    return output_matrix
+
+
+
+def mixColumns(state):
+    state = [[hex_to_int(cell) for cell in row] for row in state]
+
+    new_state = []
+    for i in range(4):  
+        column = [state[j][i] for j in range(4)]  
+        new_state.append(mixColumn(*column)) 
+    
+    # Convert back to hex strings
+    output_matrix = [[int_to_hex(cell) for cell in row] for row in new_state]
+
+    return list(map(list, zip(*output_matrix)))  
+
+def mixColumn(a, b, c, d):
+    # Define the matrix for MixColumns
+    mix_matrix = [[2, 3, 1, 1],
+              [1, 2, 3, 1],
+              [1, 1, 2, 3],
+              [3, 1, 1, 2]]
+    return [gmul(a, mix_matrix[0][0]) ^ gmul(b, mix_matrix[0][1]) ^ gmul(c, mix_matrix[0][2]) ^ gmul(d, mix_matrix[0][3]),
+            gmul(a, mix_matrix[1][0]) ^ gmul(b, mix_matrix[1][1]) ^ gmul(c, mix_matrix[1][2]) ^ gmul(d, mix_matrix[1][3]),
+            gmul(a, mix_matrix[2][0]) ^ gmul(b, mix_matrix[2][1]) ^ gmul(c, mix_matrix[2][2]) ^ gmul(d, mix_matrix[2][3]),
+            gmul(a, mix_matrix[3][0]) ^ gmul(b, mix_matrix[3][1]) ^ gmul(c, mix_matrix[3][2]) ^ gmul(d, mix_matrix[3][3])]
+
+def gmul(a, b):
+    if b == 1:
+        return a
+    tmp = (a << 1) & 0xff
+    if b == 2:
+        return tmp if a < 128 else tmp ^ 0x1b
+    if b == 3:
+        return gmul(a, 2) ^ a
+    
+
+
+
+
+
+
+
+
+aes()
